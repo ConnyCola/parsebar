@@ -5,8 +5,8 @@ from tkinter import ttk
 import matplotlib
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-#import numpy as np
 import time
+import signal
 
 arg = sys.argv[2:]
 
@@ -18,6 +18,7 @@ ser = Serial(serialPort, baudRate, timeout=0, writeTimeout=0)  # ensure non-bloc
 # make a TkInter Window
 root = Tk()
 root.wm_title("Reading Serial")
+root.attributes("-topmost", True)
 
 lab_array = []
 progress_array = []
@@ -28,9 +29,9 @@ value_array = []
 
 plot_array = []
 
-# print arg
+print len(arg)
 
-for i in range(len(arg) / 2):
+for i in range(int(len(arg) / 2)):
     print("generate " + str(arg[i * 2]))
     l = Label(root, text="", font="Helvetica 16", width=13)
     pb = ttk.Progressbar(root, orient='horizontal', mode='determinate', length=500)
@@ -45,8 +46,10 @@ for i in range(len(arg) / 2):
     l.grid(row=i, column=0)
     pb.grid(row=i, column=1)
 
-    plt.subplot((100 * len(arg) / 2 + 100) + 11 + i)
+    sub_num = (100 * int(len(arg) / 2)) + 11 + i
+    plt.subplot(sub_num)
     plt.axis([0, 500, 0, int(arg[i * 2 + 1])])
+    plt.ylabel(str(arg[i * 2]))
     p, = plt.plot([], [])
     plot_array.append(p)
 
@@ -55,10 +58,11 @@ for i in range(len(arg) / 2):
 # useful for parsing commands
 # Serial.readline seems unreliable at times too
 serBuffer = ""
-
+time_old = 0.0
+fps = 0
 
 def readSerial():
-
+    global time_old, fps
     while True:
         c = ser.read()  # attempt to read a character from Serial
 
@@ -75,6 +79,11 @@ def readSerial():
 
         if c == '\n':
             serBuffer += "\n"  # add the newline to the buffer
+            fps = fps + 1
+            if time.time() > (time_old + 1.0):
+                print("fps: " + str(fps))
+                fps = 0
+                time_old = time.time()
 
             for i, s in enumerate(search_array):
                 if s in serBuffer:
@@ -83,12 +92,12 @@ def readSerial():
                         lab_array[i].configure(text=serBuffer)
                         progress_array[i]["value"] = v
 
-                        v = int(float(v))
+                        v = float(v)
                         value_array[i] = value_array[i][1:]
                         value_array[i].append(v)
 
                     except:
-                        print("Error")
+                        print("Error: " + str(serBuffer))
                         pass
 
             serBuffer = ""  # empty the buffer
@@ -108,14 +117,23 @@ def updatePlot():
         p.set_ydata(value_array[i])
         p.set_xdata(num_array)
 
-    plt.pause(0.001)
-    root.after(30, updatePlot)  # check serial again soon
+    plt.pause(0.01)
+    root.after(10, updatePlot)  # check serial again soon
 
+
+def signal_handler(sig, frame):
+        print('You pressed Ctrl+C!')
+        sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 # after initializing serial, an arduino may need a bit of time to reset
 
 root.after(100, readSerial)
-root.after(200, updatePlot)
-root.geometry("650x" + str(root.winfo_reqheight()))
+if '--gui' in arg[-1]:
+    root.after(200, updatePlot)
+
+#root.geometry("650x" + str(root.winfo_reqheight()))
 
 root.mainloop()
