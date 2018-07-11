@@ -3,7 +3,7 @@ from serial import *
 from tkinter import *
 from tkinter import ttk
 import matplotlib
-# matplotlib.use("TkAgg")
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import time
 import signal
@@ -11,7 +11,7 @@ import signal
 arg = sys.argv[2:]
 
 serialPort = sys.argv[1]
-serialPort = "/dev/tty.wchusbserial1410"
+#serialPort = "/dev/tty.wchusbserial1410"
 baudRate = 115200
 ser = Serial(serialPort, baudRate, timeout=0, writeTimeout=0)  # ensure non-blocking
 
@@ -28,8 +28,6 @@ va = range(500)
 value_array = []
 
 plot_array = []
-
-print len(arg)
 
 for i in range(int(len(arg) / 2)):
     print("generate " + str(arg[i * 2]))
@@ -60,6 +58,7 @@ for i in range(int(len(arg) / 2)):
 serBuffer = ""
 time_old = 0.0
 fps = 0
+
 
 def readSerial():
     global time_old, fps
@@ -102,7 +101,7 @@ def readSerial():
 
             serBuffer = ""  # empty the buffer
         else:
-            serBuffer += c  # add to the buffer
+            serBuffer += str(c)  # add to the buffer
     # plt.show()
 
     root.after(10, readSerial)  # check serial again soon
@@ -122,8 +121,8 @@ def updatePlot():
 
 
 def signal_handler(sig, frame):
-        print('You pressed Ctrl+C!')
-        sys.exit(0)
+    print('You pressed Ctrl+C!')
+    sys.exit(0)
 
 
 signal.signal(signal.SIGINT, signal_handler)
