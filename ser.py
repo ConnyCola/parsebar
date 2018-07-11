@@ -1,7 +1,13 @@
 import sys
 from serial import *
-from tkinter import *
-from tkinter import ttk
+
+try:
+    from Tkinter import *
+    import ttk
+except ImportError:
+    from tkinter import *
+    import tkinter.ttk as ttk
+
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
